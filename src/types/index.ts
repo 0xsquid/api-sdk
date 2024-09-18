@@ -4,10 +4,11 @@ import {
   RouteRequest,
   RouteResponse as _RouteResponse,
 } from "@0xsquid/squid-types";
-import { SigningStargateClient } from "@cosmjs/stargate";
+import { DeliverTxResponse, SigningStargateClient } from "@cosmjs/stargate";
 
 import { EvmWallet, TransactionResponse, RpcProvider, Contract, GasData } from "./ethers";
 import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 
 export * from "@0xsquid/squid-types";
 export * from "./cosmos";
@@ -34,7 +35,7 @@ export type ExecutionSettings = {
   infiniteApproval?: boolean;
 };
 
-export type CosmosSigner = SigningStargateClient;
+export type CosmosSigner = SigningStargateClient | SigningCosmWasmClient;
 
 export type ExecuteRoute = {
   signer: EvmWallet | CosmosSigner;
@@ -42,6 +43,7 @@ export type ExecuteRoute = {
   executionSettings?: ExecutionSettings;
   overrides?: OverrideParams;
   signerAddress?: string; // cosmos specific
+  useBroadcast?: boolean;
 };
 
 export type RouteResponse = _RouteResponse & {
@@ -49,7 +51,7 @@ export type RouteResponse = _RouteResponse & {
   integratorId?: string;
 };
 
-export type TransactionResponses = TransactionResponse | TxRaw;
+export type TransactionResponses = TransactionResponse | TxRaw | DeliverTxResponse;
 
 export type GetStatus = {
   transactionId: string;

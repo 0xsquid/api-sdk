@@ -1,7 +1,17 @@
 export * from "./cctpProto";
 
+import Long from "long";
 import { fromBech32, toBech32, toUtf8 } from "@cosmjs/encoding";
-import { calculateFee, Coin, GasPrice, StargateClient } from "@cosmjs/stargate";
+import {
+  AminoTypes,
+  calculateFee,
+  Coin,
+  createIbcAminoConverters,
+  DeliverTxResponse,
+  GasPrice,
+  StargateClient,
+} from "@cosmjs/stargate";
+import { SigningCosmWasmClient, createWasmAminoConverters } from "@cosmjs/cosmwasm-stargate";
 
 import {
   CosmosSigner,
@@ -59,7 +69,7 @@ export class CosmosHandler {
   }: {
     data: ExecuteRoute;
     params: RouteParamsPopulated;
-  }): Promise<TxRaw> {
+  }): Promise<TxRaw | DeliverTxResponse> {
     await this.validateBalance({ data, params });
 
     const { route } = data;
@@ -100,10 +110,35 @@ export class CosmosHandler {
         throw new Error(`Cosmos message ${cosmosMsg.typeUrl} not supported`);
     }
 
+    // This conversion is needed for Ledger, They only supports Amino messages
+    // TODO: At the moment there's a limit on Ledger Nano S models
+    // This limit prevents WASM_TYPE messages to be signed (because payload message is too big)
+    const aminoTypes = this.getAminoTypeConverters();
+    const firstMsg = msgs[0];
+    const formattedMsg = {
+      ...firstMsg,
+      value: {
+        ...firstMsg.value,
+        // Memo cannot be undefined, otherwise amino converter throws error
+        memo: (firstMsg.value as any).memo || "",
+        // Timeout wasn't formatted in the right way, so getting it manually
+        timeoutTimestamp: this.getTimeoutTimestamp(),
+      },
+    };
+
+    const aminoMsg = aminoTypes.toAmino(formattedMsg);
+    const fromAminoMsg = aminoTypes.fromAmino(aminoMsg);
+
     // simulate tx to estimate gas cost
-    const estimatedGas = await signer.simulate(signerAddress, msgs, "");
-    const gasMultiplier = Number(route.transactionRequest?.maxFeePerGas) || 1.3;
+    const estimatedGas = await signer.simulate(signerAddress, [fromAminoMsg], "");
+
+    const gasMultiplier = Number(route.transactionRequest?.maxFeePerGas) || 1.5;
+
     const gasPrice = route.transactionRequest?.gasPrice as string;
+    const fee = calculateFee(
+      Math.trunc(estimatedGas * gasMultiplier),
+      GasPrice.fromString(gasPrice),
+    );
 
     let memo = "";
     if (data.route.transactionRequest?.requestId) {
@@ -112,12 +147,32 @@ export class CosmosHandler {
       });
     }
 
-    return signer.sign(
-      signerAddress,
-      msgs,
-      calculateFee(Math.trunc(estimatedGas * gasMultiplier), GasPrice.fromString(gasPrice)),
-      memo,
-    );
+    const useBroadcast = data.useBroadcast ?? false;
+    if (useBroadcast) {
+      return (signer as SigningCosmWasmClient).signAndBroadcast(
+        signerAddress,
+        [fromAminoMsg],
+        fee,
+        memo,
+      );
+    }
+
+    return (signer as SigningCosmWasmClient).sign(signerAddress, [fromAminoMsg], fee, memo);
+  }
+
+  private getAminoTypeConverters(): AminoTypes {
+    return new AminoTypes({
+      ...createIbcAminoConverters(),
+      ...createWasmAminoConverters(),
+    });
+  }
+
+  private getTimeoutTimestamp(): number {
+    const PACKET_LIFETIME_NANOS = 3600 * 1_000_000_000; // 1 Hour
+
+    const currentTimeNanos = Math.floor(Date.now() * 1_000_000);
+    const timeoutTimestamp = Long.fromNumber(currentTimeNanos + PACKET_LIFETIME_NANOS);
+    return timeoutTimestamp.toNumber();
   }
 
   async getBalances({
