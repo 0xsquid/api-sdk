@@ -21,7 +21,7 @@ yarn integration:tradesendtrade
 API endpoint documentation
 <https://docs.squidrouter.com/api>
 
-- install package dependancies "yarn install"
+- install package dependencies "yarn install"
 - configuration in .env file (rename example to .env)
 - explore the /api/quotes & api/tokens endpoints for supported chains and tokens
 - run approval.ts to approve tokens before any transactions eg "yarn ts-node approve.ts"

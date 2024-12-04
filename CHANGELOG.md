@@ -596,7 +596,7 @@
 * add token type to route response ([#35](https://github.com/0xsquid/api-sdk/issues/35)) ([0f4f47f](https://github.com/0xsquid/api-sdk/commit/0f4f47fc4d74aacf16dd54301ffbb0bb1f21fb2b))
 * add tradeSend params ([408610d](https://github.com/0xsquid/api-sdk/commit/408610db750c46ef6e4a1409e8e3f1af5d48c9d6))
 * add tradeSendTrade test ([6e88f9b](https://github.com/0xsquid/api-sdk/commit/6e88f9bbe014e5b5cf964c6a824de485b1665914))
-* add tradSend script integration ([0d3f3ed](https://github.com/0xsquid/api-sdk/commit/0d3f3ed5a0149b7694b63138fc45f2f7f75e9401))
+* add tradeSend script integration ([0d3f3ed](https://github.com/0xsquid/api-sdk/commit/0d3f3ed5a0149b7694b63138fc45f2f7f75e9401))
 * add yargs support ([1d477c5](https://github.com/0xsquid/api-sdk/commit/1d477c5604a504b22e4d635723fe0acdd381df14))
 * add yarn build command ([b45f3ff](https://github.com/0xsquid/api-sdk/commit/b45f3ff9857950ac6ef199f572ebabbf8ebcef74))
 * change chains type ([fa9d472](https://github.com/0xsquid/api-sdk/commit/fa9d4729a14acc1cab0267b798a77229c3e3e620))
